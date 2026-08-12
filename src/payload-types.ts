@@ -184,6 +184,10 @@ export interface Page {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Predefined disease categories to help organize and highlight content.
+   */
+  diseaseTypes?: ('cardiovascular' | 'respiratory' | 'diabetes' | 'oncology' | 'neurology')[] | null;
   organization?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -306,6 +310,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   content?: T;
+  diseaseTypes?: T;
   organization?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -36,6 +36,22 @@ export const Pages: CollectionConfig = {
       type: 'richText',
     },
     {
+      name: 'diseaseTypes',
+      label: 'Disease Types',
+      type: 'select',
+      hasMany: true,
+      options: [
+        { label: 'Cardiovascular', value: 'cardiovascular' },
+        { label: 'Respiratory', value: 'respiratory' },
+        { label: 'Diabetes', value: 'diabetes' },
+        { label: 'Oncology', value: 'oncology' },
+        { label: 'Neurology', value: 'neurology' },
+      ],
+      admin: {
+        description: 'Predefined disease categories to help organize and highlight content.',
+      },
+    },
+    {
       name: 'organization',
       type: 'text',
       index: true,
