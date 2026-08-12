@@ -65,6 +65,8 @@ export const Users: CollectionConfig = {
       type: 'text',
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
     {
@@ -79,6 +81,8 @@ export const Users: CollectionConfig = {
       type: 'text',
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
     {
@@ -93,6 +97,8 @@ export const Users: CollectionConfig = {
       type: 'json',
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
     {
@@ -101,6 +107,8 @@ export const Users: CollectionConfig = {
       defaultValue: false,
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
   ],

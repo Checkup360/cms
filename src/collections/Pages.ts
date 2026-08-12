@@ -6,7 +6,7 @@ export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'organization', 'updatedAt'],
+    defaultColumns: ['title', 'diseaseTypes', 'createdAt', 'updatedAt'],
   },
   access: {
     create: organizationAdminScoped,
@@ -57,6 +57,8 @@ export const Pages: CollectionConfig = {
       index: true,
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
   ],

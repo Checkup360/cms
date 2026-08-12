@@ -134,7 +134,7 @@ export const UnorderedListFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'unorderedList',
@@ -155,7 +155,7 @@ export const UnorderedListFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'unorderedList',
@@ -206,7 +206,7 @@ export const OrderedListFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'orderedList',
@@ -227,7 +227,7 @@ export const OrderedListFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'orderedList',
@@ -278,7 +278,7 @@ export const ChecklistFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'checklist',
@@ -299,7 +299,7 @@ export const ChecklistFeatureClient = createClientFeature({
         key: 'lists',
         type: 'dropdown',
         ChildComponent: ListIcon,
-        order: 25,
+        order: 28,
         items: [
           {
             key: 'checklist',

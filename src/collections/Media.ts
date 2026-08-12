@@ -33,6 +33,8 @@ export const Media: CollectionConfig = {
       index: true,
       admin: {
         hidden: true,
+        disableListColumn: true,
+        disableListFilter: true,
       },
     },
   ],
