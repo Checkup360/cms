@@ -15,7 +15,7 @@ export const Users: CollectionConfig = {
     strategies: [backendAuthStrategy],
   },
   access: {
-    read: ({ req, id }) => Boolean(req.user && req.user.id === id),
+    read: ({ req, id }) => Boolean(req.user && String(req.user.id) === String(id)),
     create: () => false,
     update: () => false,
     delete: () => false,

@@ -39,6 +39,9 @@ export const Pages: CollectionConfig = {
       name: 'organization',
       type: 'text',
       index: true,
+      admin: {
+        hidden: true,
+      },
     },
   ],
 }

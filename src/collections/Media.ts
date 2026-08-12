@@ -31,6 +31,9 @@ export const Media: CollectionConfig = {
       name: 'organization',
       type: 'text',
       index: true,
+      admin: {
+        hidden: true,
+      },
     },
   ],
   upload: true,
