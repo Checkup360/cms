@@ -80,13 +80,7 @@ export default buildConfig({
         UploadFeature({
           collections: {
             media: {
-              fields: [
-                {
-                  name: 'alt',
-                  type: 'text',
-                  required: true,
-                },
-              ],
+              fields: [],
             },
           },
         }),
