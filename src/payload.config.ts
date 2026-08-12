@@ -23,6 +23,18 @@ import { Pages } from './collections/Pages'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const getDatabaseUrl = (): string => {
+  const user = process.env.POSTGRES_USER || 'postgres'
+  const password = process.env.POSTGRES_PASSWORD || 'postgres'
+  const host =
+    process.env.POSTGRES_HOST ||
+    (process.env.NODE_ENV === 'production' ? 'db' : '127.0.0.1')
+  const port = process.env.POSTGRES_PORT || '5432'
+  const baseDb = process.env.POSTGRES_DB || 'checkup360'
+  const dbName = baseDb.endsWith('_cms') ? baseDb : `${baseDb}_cms`
+  return `postgres://${user}:${password}@${host}:${port}/${dbName}`
+}
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -99,7 +111,7 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URL || '',
+      connectionString: getDatabaseUrl(),
     },
   }),
   sharp,
