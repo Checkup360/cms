@@ -4,12 +4,9 @@ import {
   HeadingFeature,
   FixedToolbarFeature,
   InlineToolbarFeature,
-  OrderedListFeature,
-  UnorderedListFeature,
   UploadFeature,
   AlignFeature,
   BlockquoteFeature,
-  ChecklistFeature,
   HorizontalRuleFeature,
   IndentFeature,
 } from '@payloadcms/richtext-lexical'
@@ -39,32 +36,62 @@ export default buildConfig({
   },
   collections: [Users, Media, Pages],
   editor: lexicalEditor({
-    features: ({ defaultFeatures }) => [
-      ...defaultFeatures,
-      HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }),
-      FixedToolbarFeature(),
-      InlineToolbarFeature(),
-      OrderedListFeature(),
-      UnorderedListFeature(),
-      ChecklistFeature(),
-      BlockquoteFeature(),
-      HorizontalRuleFeature(),
-      IndentFeature(),
-      AlignFeature(),
-      UploadFeature({
-        collections: {
-          media: {
-            fields: [
-              {
-                name: 'alt',
-                type: 'text',
-                required: true,
-              },
-            ],
+    features: ({ defaultFeatures }) => {
+      const modifiedFeatures = defaultFeatures.map((feature) => {
+        if (feature.key === 'unorderedList') {
+          return {
+            ...feature,
+            feature: {
+              ...feature.feature,
+              ClientFeature: './components/CustomListFeatures.client#UnorderedListFeatureClient',
+            },
+          }
+        }
+        if (feature.key === 'orderedList') {
+          return {
+            ...feature,
+            feature: {
+              ...feature.feature,
+              ClientFeature: './components/CustomListFeatures.client#OrderedListFeatureClient',
+            },
+          }
+        }
+        if (feature.key === 'checklist') {
+          return {
+            ...feature,
+            feature: {
+              ...feature.feature,
+              ClientFeature: './components/CustomListFeatures.client#ChecklistFeatureClient',
+            },
+          }
+        }
+        return feature
+      })
+
+      return [
+        ...modifiedFeatures,
+        HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }),
+        FixedToolbarFeature(),
+        InlineToolbarFeature(),
+        BlockquoteFeature(),
+        HorizontalRuleFeature(),
+        IndentFeature(),
+        AlignFeature(),
+        UploadFeature({
+          collections: {
+            media: {
+              fields: [
+                {
+                  name: 'alt',
+                  type: 'text',
+                  required: true,
+                },
+              ],
+            },
           },
-        },
-      }),
-    ],
+        }),
+      ]
+    },
   }),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
