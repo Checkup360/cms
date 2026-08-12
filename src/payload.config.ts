@@ -31,6 +31,11 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      logout: {
+        Button: './components/LogoutButton',
+      },
+    },
   },
   collections: [Users, Media, Pages],
   editor: lexicalEditor({
