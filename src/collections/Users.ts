@@ -111,5 +111,19 @@ export const Users: CollectionConfig = {
         disableListFilter: true,
       },
     },
+    {
+      name: 'createdAt',
+      type: 'date',
+      admin: {
+        hidden: true,
+      },
+    },
+    {
+      name: 'updatedAt',
+      type: 'date',
+      admin: {
+        hidden: true,
+      },
+    },
   ],
 }

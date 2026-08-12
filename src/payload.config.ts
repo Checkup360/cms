@@ -9,6 +9,7 @@ import {
   BlockquoteFeature,
   HorizontalRuleFeature,
   IndentFeature,
+  RelationshipFeature,
 } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -38,6 +39,11 @@ export default buildConfig({
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => {
       const modifiedFeatures = defaultFeatures.map((feature) => {
+        if (feature.key === 'relationship') {
+          return RelationshipFeature({
+            enabledCollections: ['pages'],
+          })
+        }
         if (feature.key === 'unorderedList') {
           return {
             ...feature,

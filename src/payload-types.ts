@@ -138,8 +138,8 @@ export interface User {
     | boolean
     | null;
   isSysadmin?: boolean | null;
-  updatedAt: string;
   createdAt: string;
+  updatedAt: string;
   collection: 'users';
 }
 /**
@@ -281,8 +281,8 @@ export interface UsersSelect<T extends boolean = true> {
   organizationName?: T;
   roles?: T;
   isSysadmin?: T;
-  updatedAt?: T;
   createdAt?: T;
+  updatedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
