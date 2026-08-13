@@ -6,7 +6,7 @@ export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'diseaseTypes', 'createdAt', 'updatedAt'],
+    defaultColumns: ['coverImage', 'title', 'diseaseTypes', 'createdAt', 'updatedAt'],
   },
   access: {
     create: organizationAdminScoped,
@@ -26,6 +26,15 @@ export const Pages: CollectionConfig = {
     ],
   },
   fields: [
+    {
+      name: 'coverImage',
+      label: 'Cover Image',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Cover or featured image for the article/page.',
+      },
+    },
     {
       name: 'title',
       type: 'text',

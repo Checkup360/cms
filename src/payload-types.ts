@@ -168,6 +168,10 @@ export interface Media {
  */
 export interface Page {
   id: number;
+  /**
+   * Cover or featured image for the article/page.
+   */
+  coverImage?: (number | null) | Media;
   title: string;
   content?: {
     root: {
@@ -308,6 +312,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
+  coverImage?: T;
   title?: T;
   content?: T;
   diseaseTypes?: T;
