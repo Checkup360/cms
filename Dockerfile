@@ -57,9 +57,10 @@ RUN adduser --system --uid 1001 nextjs
 # Copy static public assets
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
+# Set the correct permission for prerender cache and media volume
 RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir -p /app/media
+RUN chown -R nextjs:nodejs .next /app/media
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
