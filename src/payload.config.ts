@@ -25,8 +25,11 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const getDatabaseUrl = (): string => {
-  const user = process.env.POSTGRES_USER || 'postgres'
-  const password = process.env.POSTGRES_PASSWORD || 'postgres'
+  if (process.env.DATABASE_URI) {
+    return process.env.DATABASE_URI
+  }
+  const user = encodeURIComponent(process.env.POSTGRES_USER || 'postgres')
+  const password = encodeURIComponent(process.env.POSTGRES_PASSWORD || 'postgres')
   const host =
     process.env.POSTGRES_HOST ||
     (process.env.NODE_ENV === 'production' ? 'db' : '127.0.0.1')
