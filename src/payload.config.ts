@@ -113,6 +113,7 @@ export default buildConfig({
     pool: {
       connectionString: getDatabaseUrl(),
     },
+    push: true,
   }),
   sharp,
   plugins: [],
