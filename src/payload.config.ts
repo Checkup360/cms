@@ -18,6 +18,7 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Authors } from './collections/Authors'
 import { Pages } from './collections/Pages'
 import { migrations } from './migrations'
 
@@ -59,13 +60,13 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Pages],
+  collections: [Users, Media, Authors, Pages],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => {
       const modifiedFeatures = defaultFeatures.map((feature) => {
         if (feature.key === 'relationship') {
           return RelationshipFeature({
-            enabledCollections: ['pages'],
+            enabledCollections: ['pages', 'authors'],
           })
         }
         if (feature.key === 'unorderedList') {

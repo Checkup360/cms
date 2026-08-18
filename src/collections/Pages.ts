@@ -41,6 +41,15 @@ export const Pages: CollectionConfig = {
       required: true,
     },
     {
+      name: 'author',
+      label: 'Author',
+      type: 'relationship',
+      relationTo: 'authors',
+      admin: {
+        description: 'Author of the article/page.',
+      },
+    },
+    {
       name: 'content',
       type: 'richText',
     },
