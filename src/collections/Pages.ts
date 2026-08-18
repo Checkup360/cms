@@ -6,7 +6,7 @@ export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['coverImage', 'title', 'diseaseTypes', 'createdAt', 'updatedAt'],
+    defaultColumns: ['coverImage', 'title', 'diseaseTypes', 'publishedAt', 'createdAt'],
   },
   access: {
     create: organizationAdminScoped,
@@ -41,12 +41,37 @@ export const Pages: CollectionConfig = {
       required: true,
     },
     {
+      name: 'summary',
+      label: 'Summary / Subtitle',
+      type: 'textarea',
+      admin: {
+        description: 'Brief summary or excerpt displayed on article cards and under the title.',
+      },
+    },
+    {
       name: 'author',
       label: 'Author',
       type: 'relationship',
       relationTo: 'authors',
       admin: {
         description: 'Author of the article/page.',
+      },
+    },
+    {
+      name: 'publishedAt',
+      label: 'Publication Date',
+      type: 'date',
+      admin: {
+        description: 'Visible publication date of the article. If empty, creation date is used.',
+      },
+    },
+    {
+      name: 'readTime',
+      label: 'Read Time (minutes)',
+      type: 'number',
+      min: 1,
+      admin: {
+        description: 'Custom estimated reading time in minutes (optional). If empty, it will be calculated automatically from content.',
       },
     },
     {

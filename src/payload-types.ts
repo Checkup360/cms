@@ -202,9 +202,21 @@ export interface Page {
   coverImage?: (number | null) | Media;
   title: string;
   /**
+   * Brief summary or excerpt displayed on article cards and under the title.
+   */
+  summary?: string | null;
+  /**
    * Author of the article/page.
    */
   author?: (number | null) | Author;
+  /**
+   * Visible publication date of the article. If empty, creation date is used.
+   */
+  publishedAt?: string | null;
+  /**
+   * Custom estimated reading time in minutes (optional). If empty, it will be calculated automatically from content.
+   */
+  readTime?: number | null;
   content?: {
     root: {
       type: string;
@@ -363,7 +375,10 @@ export interface AuthorsSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   coverImage?: T;
   title?: T;
+  summary?: T;
   author?: T;
+  publishedAt?: T;
+  readTime?: T;
   content?: T;
   diseaseTypes?: T;
   organization?: T;
