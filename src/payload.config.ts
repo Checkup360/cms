@@ -39,6 +39,14 @@ const getDatabaseUrl = (): string => {
   return `postgres://${user}:${password}@${host}:${port}/${dbName}`
 }
 
+const allowedOrigins: string[] = process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+    ]
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -121,6 +129,8 @@ export default buildConfig({
     migrationDir: path.resolve(dirname, 'migrations'),
     prodMigrations: migrations,
   }),
+  cors: allowedOrigins,
+  csrf: allowedOrigins,
   sharp,
   plugins: [],
 })
