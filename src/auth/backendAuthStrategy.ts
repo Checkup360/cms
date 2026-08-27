@@ -116,14 +116,11 @@ export function getBackendTokenExpiration(headers: Headers): number {
   }
 }
 
-const provisionedUserIds = new Set<string>()
-
 async function ensureUserRow(
   payload: Payload,
   id: string,
   email: string
 ): Promise<void> {
-  if (provisionedUserIds.has(id)) return
   try {
     const existing = await payload.find({
       collection: 'users',
@@ -138,9 +135,8 @@ async function ensureUserRow(
         overrideAccess: true,
       })
     }
-    provisionedUserIds.add(id)
-  } catch {
-    console.warn(`[cms-auth] failed to provision users row for ${id}`)
+  } catch (err) {
+    console.warn(`[cms-auth] failed to provision users row for ${id}:`, err)
   }
 }
 
