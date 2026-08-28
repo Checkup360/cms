@@ -1,6 +1,8 @@
 import type { Access } from 'payload'
 import type { BackendUser } from './backendAuthStrategy'
 
+const CMS_ROLES = ['admin', 'content_manager']
+
 function organizationIdOf(req: {
   user?: unknown
 }): string | null | undefined {
@@ -18,5 +20,17 @@ export const organizationAdminScoped: Access = ({ req }) => {
   const organizationId = organizationIdOf(req)
   const user = req.user as BackendUser | null | undefined
   if (!organizationId || !user?.roles?.includes('admin')) return false
+  return { organization: { equals: organizationId } }
+}
+
+/**
+ * Grants write access to users with the `admin` or `content_manager` role
+ * within their organisation. Used for CMS collections (Pages, Authors, Media).
+ */
+export const organizationCmsScoped: Access = ({ req }) => {
+  const organizationId = organizationIdOf(req)
+  const user = req.user as BackendUser | null | undefined
+  if (!organizationId) return false
+  if (!user?.roles?.some((r) => CMS_ROLES.includes(r))) return false
   return { organization: { equals: organizationId } }
 }

@@ -48,7 +48,7 @@ export default async function AccessDeniedPage({
         }}
       >
         You don&apos;t have permission to access this area. Only organization
-        admins can use the CMS admin panel.
+        admins and content managers can use the CMS admin panel.
       </p>
       <a
         href={loginUrl}

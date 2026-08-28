@@ -11,7 +11,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(buildLoginUrl(request.url))
   }
 
-  if (!user.roles?.includes('admin')) {
+  const CMS_ROLES = ['admin', 'content_manager']
+  if (!user.roles?.some((r) => CMS_ROLES.includes(r))) {
     const url = new URL('/access-denied', request.url)
     url.searchParams.set('next', request.url)
     return NextResponse.redirect(url)

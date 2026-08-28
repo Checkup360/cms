@@ -1,14 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
-import { organizationAdminScoped, organizationScoped } from '../auth/access'
+import { organizationCmsScoped, organizationScoped } from '../auth/access'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
-    create: organizationAdminScoped,
+    create: organizationCmsScoped,
     read: organizationScoped,
-    update: organizationAdminScoped,
-    delete: organizationAdminScoped,
+    update: organizationCmsScoped,
+    delete: organizationCmsScoped,
   },
   hooks: {
     beforeChange: [
