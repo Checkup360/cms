@@ -17,8 +17,51 @@ export default function LogoutButton() {
     }
   }
 
+  const webUrl = process.env.NEXT_PUBLIC_WEB_ORIGIN || 'http://localhost:5173'
+  const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_ORIGIN || 'http://localhost:5174'
+
   return (
-    <div className="nav__link-wrapper" style={{ marginTop: '10px' }}>
+    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <a
+        href={webUrl}
+        className="nav__link"
+        style={{
+          color: 'var(--theme-text)',
+          padding: '10px 15px',
+          fontSize: '14px',
+          fontWeight: '500',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          opacity: 0.8,
+          textDecoration: 'none',
+          transition: 'opacity 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '1'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.8'
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+        <span className="nav__label" style={{ display: 'inline' }}>Volver a la App</span>
+      </a>
+
       <button
         onClick={handleLogout}
         type="button"
