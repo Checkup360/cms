@@ -1,24 +1,79 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+
+function getWebUrl(): string {
+  if (process.env.NEXT_PUBLIC_WEB_ORIGIN) {
+    return process.env.NEXT_PUBLIC_WEB_ORIGIN
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:5173`
+    }
+    if (hostname.startsWith('cms.')) {
+      return `${protocol}//${hostname.replace(/^cms\./, 'web.')}`
+    }
+    return `${protocol}//${hostname}`
+  }
+  return 'http://localhost:5173'
+}
+
+function getApiOrigin(): string {
+  if (process.env.NEXT_PUBLIC_API_ORIGIN) {
+    return process.env.NEXT_PUBLIC_API_ORIGIN
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:8000`
+    }
+    if (hostname.startsWith('cms.')) {
+      return `${protocol}//${hostname.replace(/^cms\./, 'api.')}`
+    }
+    return `${protocol}//${hostname}`
+  }
+  return 'http://localhost:8000'
+}
 
 export default function LogoutButton() {
+  const [webUrl, setWebUrl] = useState('http://localhost:5173')
+
+  useEffect(() => {
+    setWebUrl(getWebUrl())
+  }, [])
+
   const handleLogout = async () => {
+    const apiOrigin = getApiOrigin()
+    const targetWebUrl = getWebUrl()
+
+    // 1. Invalidate backend auth cookie
+    try {
+      await fetch(`${apiOrigin}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (err) {
+      console.error('Backend logout failed:', err)
+    }
+
+    // 2. Invalidate Payload CMS local session
     try {
       await fetch('/api/users/logout', {
         method: 'POST',
         credentials: 'include',
       })
     } catch (err) {
-      console.error('Logout failed:', err)
+      console.error('CMS logout failed:', err)
     } finally {
+      // 3. Clear auth cookies on document.cookie
       document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
       document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure'
-      window.location.href = '/admin'
+      document.cookie = 'payload-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
+
+      // 4. Redirect to web app login page
+      window.location.href = `${targetWebUrl}/login`
     }
   }
-
-  const webUrl = process.env.NEXT_PUBLIC_WEB_ORIGIN || 'http://localhost:5173'
-  const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_ORIGIN || 'http://localhost:5174'
 
   return (
     <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -59,7 +114,7 @@ export default function LogoutButton() {
           <polyline points="15 3 21 3 21 9" />
           <line x1="10" y1="14" x2="21" y2="3" />
         </svg>
-        <span className="nav__label" style={{ display: 'inline' }}>Volver a la App</span>
+        <span className="nav__label" style={{ display: 'inline' }}>Back to App</span>
       </a>
 
       <button
