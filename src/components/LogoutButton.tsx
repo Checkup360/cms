@@ -1,78 +1,30 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-function getWebUrl(): string {
-  if (process.env.NEXT_PUBLIC_WEB_ORIGIN) {
-    return process.env.NEXT_PUBLIC_WEB_ORIGIN
-  }
-  if (typeof window !== 'undefined') {
-    const { protocol, hostname } = window.location
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return `${protocol}//${hostname}:5173`
-    }
-    if (hostname.startsWith('cms.')) {
-      return `${protocol}//${hostname.replace(/^cms\./, 'web.')}`
-    }
-    return `${protocol}//${hostname}`
-  }
-  return 'http://localhost:5173'
-}
-
-function getApiOrigin(): string {
-  if (process.env.NEXT_PUBLIC_API_ORIGIN) {
-    return process.env.NEXT_PUBLIC_API_ORIGIN
-  }
-  if (typeof window !== 'undefined') {
-    const { protocol, hostname } = window.location
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return `${protocol}//${hostname}:8000`
-    }
-    if (hostname.startsWith('cms.')) {
-      return `${protocol}//${hostname.replace(/^cms\./, 'api.')}`
-    }
-    return `${protocol}//${hostname}`
-  }
-  return 'http://localhost:8000'
-}
+const webUrl = (
+  process.env.NEXT_PUBLIC_WEB_ORIGIN ||
+  process.env.PUBLIC_WEB_ORIGIN ||
+  process.env.WEB_ORIGIN ||
+  'http://localhost:5173'
+).replace(/\/$/, '')
 
 export default function LogoutButton() {
-  const [webUrl, setWebUrl] = useState('http://localhost:5173')
-
-  useEffect(() => {
-    setWebUrl(getWebUrl())
-  }, [])
-
   const handleLogout = async () => {
-    const apiOrigin = getApiOrigin()
-    const targetWebUrl = getWebUrl()
-
-    // 1. Invalidate backend auth cookie
     try {
-      await fetch(`${apiOrigin}/auth/logout`, {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       })
+      const data = await response.json()
+      if (data?.redirectUrl) {
+        window.location.href = data.redirectUrl
+        return
+      }
     } catch (err) {
-      console.error('Backend logout failed:', err)
+      console.error('Logout request failed:', err)
     }
 
-    // 2. Invalidate Payload CMS local session
-    try {
-      await fetch('/api/users/logout', {
-        method: 'POST',
-        credentials: 'include',
-      })
-    } catch (err) {
-      console.error('CMS logout failed:', err)
-    } finally {
-      // 3. Clear auth cookies on document.cookie
-      document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
-      document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure'
-      document.cookie = 'payload-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
-
-      // 4. Redirect to web app login page
-      window.location.href = `${targetWebUrl}/login`
-    }
+    window.location.href = `${webUrl}/login`
   }
 
   return (
