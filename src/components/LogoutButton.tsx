@@ -6,10 +6,14 @@ export default function LogoutButton() {
     try {
       await fetch('/api/users/logout', {
         method: 'POST',
+        credentials: 'include',
       })
-      window.location.href = '/admin'
     } catch (err) {
       console.error('Logout failed:', err)
+    } finally {
+      document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
+      document.cookie = 'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure'
+      window.location.href = '/admin'
     }
   }
 

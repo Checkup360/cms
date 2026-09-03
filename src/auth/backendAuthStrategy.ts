@@ -2,7 +2,7 @@ import type { AuthStrategyFunctionArgs, Payload } from 'payload'
 import { decodeJwt, jwtVerify } from 'jose'
 
 const AUTH_SECRET = process.env.AUTH_SECRET || ''
-const BACKEND_URL = (process.env.BACKEND_URL || 'http://backend:8000').replace(
+export const BACKEND_URL = (process.env.BACKEND_URL || 'http://backend:8000').replace(
   /\/$/,
   ''
 )

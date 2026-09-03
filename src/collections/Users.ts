@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
+import { cookies } from 'next/headers'
 
 import {
+  BACKEND_URL,
   backendAuthStrategy,
   getBackendTokenExpiration,
 } from '../auth/backendAuthStrategy'
@@ -15,28 +17,61 @@ export const Users: CollectionConfig = {
     strategies: [backendAuthStrategy],
   },
   access: {
-    read: ({ req, id }) => Boolean(req.user && String(req.user.id) === String(id)),
+    read: ({ req, id }: { req: any; id?: any }) => Boolean(req.user && String(req.user.id) === String(id)),
     create: () => false,
-    update: ({ req, id }) => Boolean(req.user && String(req.user.id) === String(id)),
+    update: ({ req, id }: { req: any; id?: any }) => Boolean(req.user && String(req.user.id) === String(id)),
     delete: () => false,
   },
   endpoints: [
     {
       path: '/logout',
       method: 'post',
-      handler: async () => {
+      handler: async (req: any) => {
+        let backendSetCookie: string | null = null
+
+        const cookieHeader = req.headers.get('cookie')
+        if (cookieHeader) {
+          try {
+            const backendRes = await fetch(`${BACKEND_URL}/auth/logout`, {
+              method: 'POST',
+              headers: { cookie: cookieHeader },
+              cache: 'no-store',
+            })
+            backendSetCookie = backendRes.headers.get('set-cookie')
+          } catch (err) {
+            console.warn('[cms-auth] failed to call backend logout:', err)
+          }
+        }
+
+        try {
+          const cookieStore = await cookies()
+          cookieStore.delete('auth')
+        } catch (err) {
+          console.warn('[cms-auth] failed to delete cookie via cookies():', err)
+        }
+
         const response = Response.json({ success: true })
-        response.headers.set(
+
+        if (backendSetCookie) {
+          response.headers.append('Set-Cookie', backendSetCookie)
+        }
+
+        response.headers.append(
           'Set-Cookie',
-          'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax'
+          'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax; Secure'
         )
+        response.headers.append(
+          'Set-Cookie',
+          'auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax'
+        )
+
         return response
       },
     },
   ],
   hooks: {
     afterRead: [
-      ({ doc, req }) => {
+      ({ doc, req }: { doc: any; req: any }) => {
         if (req.user && String(req.user.id) === String(doc.id)) {
           const user = req.user as any
           doc.organizationName = user.organizationName
@@ -48,7 +83,7 @@ export const Users: CollectionConfig = {
       },
     ],
     me: [
-      ({ args }) => {
+      ({ args }: { args: any }) => {
         if (args.req.user) {
           return {
             exp: getBackendTokenExpiration(args.req.headers),
