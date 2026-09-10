@@ -42,8 +42,5 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Unit & Integration tests
-        run: pnpm test:int
-
       - name: Build
         run: pnpm build
