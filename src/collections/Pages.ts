@@ -6,7 +6,7 @@ export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['coverImage', 'title', 'diseaseTypes', 'publishedAt', 'createdAt'],
+    defaultColumns: ['coverImage','title', 'diseaseTypes', 'publishedAt', 'createdAt'],
   },
   access: {
     create: organizationCmsScoped,
@@ -39,6 +39,11 @@ export const Pages: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+      admin: {
+        components: {
+          Cell: './components/TitleCell',
+        },
+      },
     },
     {
       name: 'summary',

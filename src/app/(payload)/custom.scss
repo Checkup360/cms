@@ -27,4 +27,11 @@
   .collection-edit--users .doc-controls__meta {
     display: none !important;
   }
+
+  /* Hide image filename in table cells so only the thumbnail is shown */
+  .cell-coverImage .file__filename,
+  .cell-image .file__filename {
+    display: none !important;
+  }
 }
+
