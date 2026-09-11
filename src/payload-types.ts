@@ -233,9 +233,9 @@ export interface Page {
     [k: string]: unknown;
   } | null;
   /**
-   * Predefined disease categories to help organize and highlight content.
+   * Categories to help organize, prioritize, and recommend content to members.
    */
-  diseaseTypes?: ('cardiovascular' | 'respiratory' | 'diabetes' | 'oncology' | 'neurology')[] | null;
+  diseaseTypes?: ('general' | 'diabetes' | 'sleep_apnea' | 'depression' | 'metabolic_syndrome' | 'eoss')[] | null;
   organization?: string | null;
   updatedAt: string;
   createdAt: string;
