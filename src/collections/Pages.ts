@@ -202,6 +202,7 @@ export const Pages: CollectionConfig = {
         { label: 'Depression & Mental Health', value: 'depression' },
         { label: 'Metabolic Syndrome', value: 'metabolic_syndrome' },
         { label: 'Obesity (EOSS)', value: 'eoss' },
+        { label: 'Cardiovascular Disease', value: 'cardiovascular' },
       ],
       admin: {
         description: 'Categories to help organize, prioritize, and recommend content to members.',
