@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
 
 export const WEB_ORIGIN = (
-  process.env.WEB_ORIGIN ||
   process.env.PUBLIC_WEB_ORIGIN ||
+  process.env.WEB_ORIGIN ||
   'http://localhost:5173'
 ).replace(/\/$/, '')
 

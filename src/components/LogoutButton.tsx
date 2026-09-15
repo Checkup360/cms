@@ -1,13 +1,6 @@
 'use client'
 import React from 'react'
 
-const webUrl = (
-  process.env.NEXT_PUBLIC_WEB_ORIGIN ||
-  process.env.PUBLIC_WEB_ORIGIN ||
-  process.env.WEB_ORIGIN ||
-  'http://localhost:5173'
-).replace(/\/$/, '')
-
 export default function LogoutButton() {
   const handleLogout = async () => {
     try {
@@ -24,13 +17,14 @@ export default function LogoutButton() {
       console.error('Logout request failed:', err)
     }
 
-    window.location.href = `${webUrl}/login`
+    window.location.href = '/api/auth/back-to-app'
   }
 
   return (
     <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
-        href={webUrl}
+        href="/api/auth/back-to-app"
         className="nav__link"
         style={{
           color: 'var(--theme-text)',
