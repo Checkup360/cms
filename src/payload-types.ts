@@ -150,7 +150,10 @@ export interface User {
  */
 export interface Media {
   id: number;
-  alt: string;
+  /**
+   * Descripción breve de la imagen para accesibilidad. Si se deja en blanco, se usará el nombre del archivo.
+   */
+  alt?: string | null;
   organization?: string | null;
   updatedAt: string;
   createdAt: string;

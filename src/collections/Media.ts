@@ -11,6 +11,15 @@ export const Media: CollectionConfig = {
     delete: organizationCmsScoped,
   },
   hooks: {
+    beforeValidate: [
+      ({ data, req }) => {
+        if (data && (!data.alt || typeof data.alt !== 'string' || data.alt.trim() === '')) {
+          const rawName = req.file?.name || data.filename || 'Imagen'
+          data.alt = rawName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').trim() || 'Imagen'
+        }
+        return data
+      },
+    ],
     beforeChange: [
       ({ data, req }) => {
         const user = req.user as { organizationId?: string | null } | null
@@ -25,7 +34,10 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      required: true,
+      admin: {
+        description:
+          'Descripción breve de la imagen para accesibilidad. Si se deja en blanco, se usará el nombre del archivo.',
+      },
     },
     {
       name: 'organization',
