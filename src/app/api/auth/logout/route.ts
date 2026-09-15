@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { PUBLIC_WEB_ORIGIN } from '@/auth/frontend'
+
 const BACKEND_URL = (
   process.env.BACKEND_URL || 'http://backend:8000'
-).replace(/\/$/, '')
-
-const WEB_ORIGIN = (
-  process.env.PUBLIC_WEB_ORIGIN ||
-  process.env.WEB_ORIGIN ||
-  'http://localhost:5173'
 ).replace(/\/$/, '')
 
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth'
@@ -30,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({
     success: true,
-    redirectUrl: `${WEB_ORIGIN}/login`,
+    redirectUrl: `${PUBLIC_WEB_ORIGIN}/login`,
   })
 
   response.cookies.set(AUTH_COOKIE_NAME, '', {
