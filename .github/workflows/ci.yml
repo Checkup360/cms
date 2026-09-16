@@ -13,6 +13,10 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET || 'ci-placeholder' }}
+      AUTH_SECRET: 'test-jwt-secret-key-checkup360'
+      BACKEND_URL: 'http://localhost:8000'
+      PUBLIC_WEB_ORIGIN: 'http://localhost:5173'
+      DATABASE_URI: 'postgres://postgres:postgres@127.0.0.1:5432/checkup360_cms'
 
     steps:
       - uses: actions/checkout@v4
