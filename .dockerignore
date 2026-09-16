@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output – must be produced fresh inside the container
+.next
+out
+
+# Dev / tooling
+.env
+.env.*
+!.env.example
+.claude
+.vscode
+.idea
+*.log
+
+# Git
+.git
+.gitignore
+
+# TypeScript build info (can be large and is regenerated)
+tsconfig.tsbuildinfo
+
+# Tests
+tests
+vitest.config.mts
+vitest.setup.ts
+test.env
