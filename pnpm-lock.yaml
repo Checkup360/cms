@@ -81,6 +81,9 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.9.6
+      simple-git-hooks:
+        specifier: ^2.14.0
+        version: 2.14.0
       tsx:
         specifier: 4.22.4
         version: 4.22.4
@@ -3730,6 +3733,10 @@ packages:
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
+
+  simple-git-hooks@2.14.0:
+    resolution: {integrity: sha512-kkTORPAuxQz2g1QUuN0J8yGWT28tjGBfPOdJ4xT7Vbeu30veKUZQIoID2qGgCDAakaQn59UeZJJ4cFGB8PVP2A==}
+    hasBin: true
 
   simple-swizzle@0.2.4:
     resolution: {integrity: sha512-nAu1WFPQSMNr2Zn9PGSZK9AGn4t/y97lEm+MXTtUDwfP0ksAIX4nO+6ruD9Jwut4C49SB1Ws+fbXsm/yScWOHw==}
@@ -8277,6 +8284,8 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   siginfo@2.0.0: {}
+
+  simple-git-hooks@2.14.0: {}
 
   simple-swizzle@0.2.4:
     dependencies:

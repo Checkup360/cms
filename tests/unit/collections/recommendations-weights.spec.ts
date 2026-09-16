@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { Pages } from '@/collections/Pages'
 
 describe('Recommended Endpoint - Risk Weights Parsing', () => {
-  const recommendedEndpoint = Pages.endpoints?.find(
+  const endpoints = Array.isArray(Pages.endpoints) ? Pages.endpoints : []
+  const recommendedEndpoint = endpoints.find(
     (e) => e.path === '/recommended' && e.method === 'get'
   )
 
