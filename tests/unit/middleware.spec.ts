@@ -41,4 +41,51 @@ describe('Middleware Route Protection', () => {
     expect(location).toContain('/login')
     expect(location).toContain(`next=${encodeURIComponent(adminUrl)}`)
   })
+
+  it('redirects users with non-CMS role (e.g. member) to /access-denied', async () => {
+    vi.mocked(authStrategy.authenticateBackendUser).mockResolvedValue({
+      id: 'member-123',
+      email: 'member@example.com',
+      collection: 'users',
+      _strategy: 'backend-jwt',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
+      roles: ['member'],
+      isSysadmin: false,
+      requiresOnboarding: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const req = createMockNextRequest(adminUrl)
+    const response = await middleware(req)
+
+    expect(response.status).toBe(307)
+    const location = response.headers.get('location')
+    expect(location).toContain('/access-denied')
+    expect(location).toContain(`next=${encodeURIComponent(adminUrl)}`)
+  })
+
+  it('redirects users with empty roles list to /access-denied', async () => {
+    vi.mocked(authStrategy.authenticateBackendUser).mockResolvedValue({
+      id: 'norole-123',
+      email: 'norole@example.com',
+      collection: 'users',
+      _strategy: 'backend-jwt',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
+      roles: [],
+      isSysadmin: false,
+      requiresOnboarding: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const req = createMockNextRequest(adminUrl)
+    const response = await middleware(req)
+
+    expect(response.status).toBe(307)
+    const location = response.headers.get('location')
+    expect(location).toContain('/access-denied')
+  })
 })
