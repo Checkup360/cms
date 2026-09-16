@@ -17,6 +17,7 @@ export default function LogoutButton() {
       console.error('Logout request failed:', err)
     }
 
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/api/auth/back-to-app'
   }
 
