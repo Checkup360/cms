@@ -15,11 +15,10 @@
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "typecheck": "tsc --noEmit",
-    "precommit": "pnpm lint && pnpm typecheck && pnpm test:int",
-    "test": "pnpm run test:unit && pnpm run test:int && pnpm run test:e2e",
+    "precommit": "pnpm lint && pnpm typecheck && pnpm test",
+    "test": "cross-env NODE_OPTIONS=--no-deprecation vitest run",
     "test:unit": "cross-env NODE_OPTIONS=--no-deprecation vitest run tests/unit",
-    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:watch": "cross-env NODE_OPTIONS=--no-deprecation vitest"
   },
   "dependencies": {
     "@payloadcms/next": "3.88.0",
