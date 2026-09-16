@@ -88,4 +88,71 @@ describe('Middleware Route Protection', () => {
     const location = response.headers.get('location')
     expect(location).toContain('/access-denied')
   })
+
+  it('allows access for users with admin role', async () => {
+    vi.mocked(authStrategy.authenticateBackendUser).mockResolvedValue({
+      id: 'admin-123',
+      email: 'admin@example.com',
+      collection: 'users',
+      _strategy: 'backend-jwt',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
+      roles: ['admin'],
+      isSysadmin: false,
+      requiresOnboarding: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const req = createMockNextRequest(adminUrl)
+    const response = await middleware(req)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+  })
+
+  it('allows access for users with content_manager role', async () => {
+    vi.mocked(authStrategy.authenticateBackendUser).mockResolvedValue({
+      id: 'cm-123',
+      email: 'cm@example.com',
+      collection: 'users',
+      _strategy: 'backend-jwt',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
+      roles: ['content_manager'],
+      isSysadmin: false,
+      requiresOnboarding: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const req = createMockNextRequest(adminUrl)
+    const response = await middleware(req)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+  })
+
+  it('allows access for users with multi-role assignment including a CMS role', async () => {
+    vi.mocked(authStrategy.authenticateBackendUser).mockResolvedValue({
+      id: 'multi-123',
+      email: 'multi@example.com',
+      collection: 'users',
+      _strategy: 'backend-jwt',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
+      roles: ['member', 'content_manager'],
+      isSysadmin: false,
+      requiresOnboarding: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const req = createMockNextRequest(adminUrl)
+    const response = await middleware(req)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+  })
 })
+
