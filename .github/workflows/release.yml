@@ -44,6 +44,14 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
 
+      - name: Restore Next.js build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -51,8 +59,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=cms-release
+          cache-to: type=gha,mode=max,scope=cms-release
 
   update-version:
     needs: build-and-push
