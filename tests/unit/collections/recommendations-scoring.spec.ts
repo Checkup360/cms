@@ -77,4 +77,28 @@ describe('Recommended Endpoint - Recency Decay & Score Sorting', () => {
     expect(data.docs[0].id).toBe('later-article')
     expect(data.docs[1].id).toBe('earlier-article')
   })
+
+  it('treats weights as clinical severity: the least healthy category ranks first', async () => {
+    // Weights come from the backend as severity = (100 - health_index) / 100,
+    // so a higher weight means a less healthy category.
+    const publishedAt = '2026-09-01T10:00:00Z'
+    const mockFind = vi.fn().mockResolvedValue({
+      docs: [
+        { id: 'healthy-area', title: 'Sleep', diseaseTypes: ['sleep_apnea'], publishedAt },
+        { id: 'unhealthy-area', title: 'Diabetes', diseaseTypes: ['diabetes'], publishedAt },
+      ],
+    })
+    const weights = encodeURIComponent(JSON.stringify({ diabetes: 0.9, sleep_apnea: 0.1 }))
+    const req = {
+      url: `http://localhost:3000/api/pages/recommended?weights=${weights}`,
+      payload: { find: mockFind },
+      user: { organizationId: 'org-1' },
+    }
+
+    const response = await (recommendedEndpoint?.handler as any)(req)
+    const data = await response.json()
+
+    expect(data.docs[0].id).toBe('unhealthy-area')
+    expect(data.docs[1].id).toBe('healthy-area')
+  })
 })
