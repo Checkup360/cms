@@ -1,7 +1,7 @@
 import type { Access } from 'payload'
 import type { BackendUser } from './backendAuthStrategy'
 
-const CMS_ROLES = ['admin', 'content_manager']
+export const CMS_ROLES = ['admin', 'content_manager']
 
 function organizationIdOf(req: {
   user?: unknown

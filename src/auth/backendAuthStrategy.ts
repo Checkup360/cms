@@ -6,7 +6,7 @@ export const BACKEND_URL = (process.env.BACKEND_URL || 'http://backend:8000').re
   /\/$/,
   ''
 )
-const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth'
+export const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth'
 const TOKEN_AUDIENCE = 'fastapi-users:auth'
 
 export interface BackendUser {
@@ -34,7 +34,7 @@ interface AuthMeResponse {
   requires_onboarding: boolean
 }
 
-function getTokenFromHeaders(headers: Headers): string | null {
+export function getTokenFromHeaders(headers: Headers): string | null {
   const authHeader = headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length)

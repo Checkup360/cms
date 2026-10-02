@@ -1,6 +1,12 @@
 import type { CollectionConfig, Where } from 'payload'
 
-import { organizationCmsScoped, organizationScoped } from '../auth/access'
+import { CMS_ROLES, organizationCmsScoped, organizationScoped } from '../auth/access'
+import type { BackendUser } from '../auth/backendAuthStrategy'
+import {
+  ContentCategoriesUnavailableError,
+  fetchContentCategories,
+} from '../lib/contentCategories'
+import { validateContentCategories } from './hooks/validateContentCategories'
 
 const DEFAULT_CATEGORY_WEIGHT = 0.2
 const RECENCY_HALF_LIFE_DAYS = 30
@@ -159,6 +165,24 @@ export const Pages: CollectionConfig = {
   },
   endpoints: [
     {
+      path: '/content-categories',
+      method: 'get',
+      handler: async (req: any) => {
+        const user = req.user as BackendUser | null | undefined
+        if (!user?.organizationId || !user.roles?.some((role) => CMS_ROLES.includes(role))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        try {
+          return Response.json({ categories: await fetchContentCategories(req) })
+        } catch (error) {
+          if (error instanceof ContentCategoriesUnavailableError) {
+            return Response.json({ error: 'Content categories unavailable' }, { status: 503 })
+          }
+          throw error
+        }
+      },
+    },
+    {
       path: '/recommended',
       method: 'get',
       handler: async (req: any) => {
@@ -216,6 +240,7 @@ export const Pages: CollectionConfig = {
         }
         return data
       },
+      validateContentCategories,
     ],
   },
   fields: [
@@ -279,19 +304,16 @@ export const Pages: CollectionConfig = {
     {
       name: 'diseaseTypes',
       label: 'Disease Types / Categories',
-      type: 'select',
+      // Health topic keys owned by the backend catalog (not a fixed enum), so
+      // new scores become categories without CMS changes or migrations.
+      type: 'text',
       hasMany: true,
-      options: [
-        { label: 'General Health', value: 'general' },
-        { label: 'Diabetes', value: 'diabetes' },
-        { label: 'Sleep Apnea', value: 'sleep_apnea' },
-        { label: 'Depression & Mental Health', value: 'depression' },
-        { label: 'Metabolic Syndrome', value: 'metabolic_syndrome' },
-        { label: 'Obesity (EOSS)', value: 'eoss' },
-        { label: 'Cardiovascular Disease', value: 'cardiovascular' },
-      ],
       admin: {
         description: 'Categories to help organize, prioritize, and recommend content to members.',
+        components: {
+          Cell: './components/ContentCategoriesCell',
+          Field: './components/ContentCategoriesField',
+        },
       },
     },
     {
