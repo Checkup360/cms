@@ -6,11 +6,13 @@ const DEFAULT_CATEGORY_WEIGHT = 0.2
 const RECENCY_HALF_LIFE_DAYS = 30
 
 const MAX_SEARCH_LENGTH = 100
+const GENERAL_CATEGORY = 'general'
 
 type RecommendedParams = {
   page: number
   limit: number
-  riskWeights: Record<string, number>
+  /** Null when the caller sent no weights: every category is then visible. */
+  riskWeights: Record<string, number> | null
   organizationId: string | null
   category: string | null
   search: string | null
@@ -20,10 +22,11 @@ function parsePositiveInteger(value: string | null, fallback: number): number {
   return Math.max(1, parseInt(value || String(fallback), 10) || fallback)
 }
 
-function parseRiskWeights(weightsParam: string | null): Record<string, number> {
-  if (!weightsParam) return {}
+function parseRiskWeights(weightsParam: string | null): Record<string, number> | null {
+  if (weightsParam === null) return null
   try {
-    return JSON.parse(weightsParam)
+    const parsed = JSON.parse(weightsParam)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
   } catch {
     const riskWeights: Record<string, number> = {}
     for (const pair of weightsParam.split(',')) {
@@ -64,6 +67,33 @@ function buildRecommendedWhere(
   return { and: conditions }
 }
 
+function articleCategories(doc: any): string[] {
+  const types = Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []
+  return types.map((type: unknown) => String(type).toLowerCase())
+}
+
+/**
+ * The member's weights only contain the risks their organization has enabled.
+ * Articles keep only their active categories (plus general); articles whose
+ * categories are all disabled are hidden. Uncategorized articles stay visible.
+ */
+function restrictToActiveCategories(
+  docs: any[],
+  riskWeights: Record<string, number> | null,
+): any[] {
+  if (riskWeights === null) return docs
+  const isActive = (category: string) =>
+    category === GENERAL_CATEGORY || (riskWeights[category] ?? 0) > 0
+
+  return docs.flatMap((doc) => {
+    const categories = articleCategories(doc)
+    if (categories.length === 0) return [doc]
+    const activeCategories = categories.filter(isActive)
+    if (activeCategories.length === 0) return []
+    return [{ ...doc, diseaseTypes: activeCategories }]
+  })
+}
+
 function relevanceScore(doc: any, riskWeights: Record<string, number>, nowMs: number): number {
   const types: string[] = Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []
   const weights = types.map((type) => {
@@ -82,12 +112,12 @@ function publicationTime(doc: any, nowMs: number): number {
   return rawDate ? new Date(rawDate).getTime() : nowMs
 }
 
-function rankByRelevance(docs: any[], riskWeights: Record<string, number>): any[] {
+function rankByRelevance(docs: any[], riskWeights: Record<string, number> | null): any[] {
   const nowMs = Date.now()
   return docs
     .map((doc) => ({
       doc,
-      score: relevanceScore(doc, riskWeights, nowMs),
+      score: relevanceScore(doc, riskWeights ?? {}, nowMs),
       timestamp: publicationTime(doc, nowMs),
     }))
     .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp)
@@ -112,13 +142,7 @@ function paginate(docs: any[], page: number, limit: number) {
 }
 
 function collectCategories(docs: any[]): string[] {
-  const categories = new Set<string>()
-  for (const doc of docs) {
-    for (const type of Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []) {
-      categories.add(String(type).toLowerCase())
-    }
-  }
-  return [...categories].sort()
+  return [...new Set(docs.flatMap(articleCategories))].sort()
 }
 
 export const Pages: CollectionConfig = {
@@ -161,10 +185,18 @@ export const Pages: CollectionConfig = {
             }),
           ])
 
-          const rankedDocs = rankByRelevance(filteredResult.docs || [], params.riskWeights)
+          const visibleDocs = restrictToActiveCategories(
+            filteredResult.docs || [],
+            params.riskWeights,
+          )
+          const rankedDocs = rankByRelevance(visibleDocs, params.riskWeights)
+          const visibleCategoryDocs = restrictToActiveCategories(
+            categoriesResult.docs || [],
+            params.riskWeights,
+          )
           return Response.json({
             ...paginate(rankedDocs, params.page, params.limit),
-            categories: collectCategories(categoriesResult.docs || []),
+            categories: collectCategories(visibleCategoryDocs),
           })
         } catch (error: any) {
           return Response.json(
