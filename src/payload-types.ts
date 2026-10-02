@@ -238,8 +238,7 @@ export interface Page {
   /**
    * Categories to help organize, prioritize, and recommend content to members.
    */
-  diseaseTypes?:
-    ('general' | 'diabetes' | 'sleep_apnea' | 'depression' | 'metabolic_syndrome' | 'eoss' | 'cardiovascular')[] | null;
+  diseaseTypes?: string[] | null;
   organization?: string | null;
   updatedAt: string;
   createdAt: string;

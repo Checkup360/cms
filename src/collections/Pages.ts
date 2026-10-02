@@ -1,9 +1,155 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 
-import { organizationCmsScoped, organizationScoped } from '../auth/access'
+import { CMS_ROLES, organizationCmsScoped, organizationScoped } from '../auth/access'
+import type { BackendUser } from '../auth/backendAuthStrategy'
+import {
+  ContentCategoriesUnavailableError,
+  fetchContentCategories,
+} from '../lib/contentCategories'
+import { validateContentCategories } from './hooks/validateContentCategories'
 
 const DEFAULT_CATEGORY_WEIGHT = 0.2
 const RECENCY_HALF_LIFE_DAYS = 30
+
+const MAX_SEARCH_LENGTH = 100
+const GENERAL_CATEGORY = 'general'
+
+type RecommendedParams = {
+  page: number
+  limit: number
+  /** Null when the caller sent no weights: every category is then visible. */
+  riskWeights: Record<string, number> | null
+  organizationId: string | null
+  category: string | null
+  search: string | null
+}
+
+function parsePositiveInteger(value: string | null, fallback: number): number {
+  return Math.max(1, parseInt(value || String(fallback), 10) || fallback)
+}
+
+function parseRiskWeights(weightsParam: string | null): Record<string, number> | null {
+  if (weightsParam === null) return null
+  try {
+    const parsed = JSON.parse(weightsParam)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    const riskWeights: Record<string, number> = {}
+    for (const pair of weightsParam.split(',')) {
+      const [key, value] = pair.split(':')
+      const weight = parseFloat(value ?? '')
+      if (key && !isNaN(weight)) riskWeights[key.trim().toLowerCase()] = weight
+    }
+    return riskWeights
+  }
+}
+
+function parseRecommendedParams(searchParams: URLSearchParams): RecommendedParams {
+  const category = searchParams.get('category')?.trim().toLowerCase() || null
+  const search = searchParams.get('search')?.trim().slice(0, MAX_SEARCH_LENGTH) || null
+  return {
+    page: parsePositiveInteger(searchParams.get('page'), 1),
+    limit: parsePositiveInteger(searchParams.get('limit'), 10),
+    riskWeights: parseRiskWeights(searchParams.get('weights')),
+    organizationId: searchParams.get('organization'),
+    category,
+    search,
+  }
+}
+
+function buildRecommendedWhere(
+  organizationId: string | null,
+  category: string | null = null,
+  search: string | null = null,
+): Where | undefined {
+  const conditions: Where[] = []
+  if (organizationId) conditions.push({ organization: { equals: organizationId } })
+  if (category) conditions.push({ diseaseTypes: { in: [category] } })
+  if (search) {
+    conditions.push({ or: [{ title: { like: search } }, { summary: { like: search } }] })
+  }
+  if (conditions.length === 0) return undefined
+  if (conditions.length === 1) return conditions[0]
+  return { and: conditions }
+}
+
+function articleCategories(doc: any): string[] {
+  const types = Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []
+  return types.map((type: unknown) => String(type).toLowerCase())
+}
+
+/**
+ * The member's weights only contain the risks their organization has enabled.
+ * Articles keep only their active categories (plus general); articles whose
+ * categories are all disabled are hidden. Uncategorized articles stay visible.
+ */
+function restrictToActiveCategories(
+  docs: any[],
+  riskWeights: Record<string, number> | null,
+): any[] {
+  if (riskWeights === null) return docs
+  const isActive = (category: string) =>
+    category === GENERAL_CATEGORY || (riskWeights[category] ?? 0) > 0
+
+  return docs.flatMap((doc) => {
+    const categories = articleCategories(doc)
+    if (categories.length === 0) return [doc]
+    const activeCategories = categories.filter(isActive)
+    if (activeCategories.length === 0) return []
+    return [{ ...doc, diseaseTypes: activeCategories }]
+  })
+}
+
+function relevanceScore(doc: any, riskWeights: Record<string, number>, nowMs: number): number {
+  const types: string[] = Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []
+  const weights = types.map((type) => {
+    const weight = riskWeights[type.toLowerCase()]
+    return typeof weight === 'number' ? weight : DEFAULT_CATEGORY_WEIGHT
+  })
+  const maxWeight = weights.length > 0 ? Math.max(...weights) : DEFAULT_CATEGORY_WEIGHT
+
+  const diffDays = Math.max(0, (nowMs - publicationTime(doc, nowMs)) / (1000 * 60 * 60 * 24))
+  const recencyFactor = 1 / (1 + diffDays / RECENCY_HALF_LIFE_DAYS)
+  return maxWeight * (1 + recencyFactor)
+}
+
+function publicationTime(doc: any, nowMs: number): number {
+  const rawDate = doc.publishedAt || doc.createdAt
+  return rawDate ? new Date(rawDate).getTime() : nowMs
+}
+
+function rankByRelevance(docs: any[], riskWeights: Record<string, number> | null): any[] {
+  const nowMs = Date.now()
+  return docs
+    .map((doc) => ({
+      doc,
+      score: relevanceScore(doc, riskWeights ?? {}, nowMs),
+      timestamp: publicationTime(doc, nowMs),
+    }))
+    .sort((a, b) => b.score - a.score || b.timestamp - a.timestamp)
+    .map((item) => item.doc)
+}
+
+function paginate(docs: any[], page: number, limit: number) {
+  const totalDocs = docs.length
+  const totalPages = Math.max(1, Math.ceil(totalDocs / limit))
+  const start = (page - 1) * limit
+  return {
+    docs: docs.slice(start, start + limit),
+    totalDocs,
+    limit,
+    page,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+    prevPage: page > 1 ? page - 1 : null,
+    nextPage: page < totalPages ? page + 1 : null,
+  }
+}
+
+function collectCategories(docs: any[]): string[] {
+  return [...new Set(docs.flatMap(articleCategories))].sort()
+}
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -19,98 +165,62 @@ export const Pages: CollectionConfig = {
   },
   endpoints: [
     {
+      path: '/content-categories',
+      method: 'get',
+      handler: async (req: any) => {
+        const user = req.user as BackendUser | null | undefined
+        if (!user?.organizationId || !user.roles?.some((role) => CMS_ROLES.includes(role))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        try {
+          return Response.json({ categories: await fetchContentCategories(req) })
+        } catch (error) {
+          if (error instanceof ContentCategoriesUnavailableError) {
+            return Response.json({ error: 'Content categories unavailable' }, { status: 503 })
+          }
+          throw error
+        }
+      },
+    },
+    {
       path: '/recommended',
       method: 'get',
       handler: async (req: any) => {
         try {
           const url = new URL(req.url, 'http://localhost')
-          const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1)
-          const limit = Math.max(1, parseInt(url.searchParams.get('limit') || '10', 10) || 10)
-          const weightsParam = url.searchParams.get('weights')
+          const params = parseRecommendedParams(url.searchParams)
+          const organizationId = (req.user as any)?.organizationId || params.organizationId
 
-          let riskWeights: Record<string, number> = {}
-          if (weightsParam) {
-            try {
-              riskWeights = JSON.parse(weightsParam)
-            } catch {
-              for (const pair of weightsParam.split(',')) {
-                const [k, v] = pair.split(':')
-                if (k && v) {
-                  const num = parseFloat(v)
-                  if (!isNaN(num)) riskWeights[k.trim().toLowerCase()] = num
-                }
-              }
-            }
-          }
+          const [filteredResult, categoriesResult] = await Promise.all([
+            req.payload.find({
+              collection: 'pages',
+              req,
+              where: buildRecommendedWhere(organizationId, params.category, params.search),
+              limit: 0,
+              depth: 2,
+            }),
+            req.payload.find({
+              collection: 'pages',
+              req,
+              where: buildRecommendedWhere(organizationId),
+              limit: 0,
+              depth: 0,
+              select: { diseaseTypes: true },
+            }),
+          ])
 
-          // Fetch all pages available to this organization context
-          const userOrg = (req.user as any)?.organizationId
-          const queryOrg = url.searchParams.get('organization')
-          const orgId = userOrg || queryOrg
-
-          const where: Record<string, any> = {}
-          if (orgId) {
-            where.organization = { equals: orgId }
-          }
-
-          const result = await req.payload.find({
-            collection: 'pages',
-            req,
-            where: Object.keys(where).length > 0 ? where : undefined,
-            limit: 0,
-            depth: 2,
-          })
-
-          const docs = result.docs || []
-          const nowMs = Date.now()
-
-          // Score each document according to category weights and publication recency
-          const scoredDocs = docs.map((doc: any) => {
-            const types = Array.isArray(doc.diseaseTypes) ? doc.diseaseTypes : []
-            
-            let maxWeight = DEFAULT_CATEGORY_WEIGHT
-            if (types.length > 0) {
-              const weightsFound = types.map((t: string) => {
-                const key = t.toLowerCase()
-                return typeof riskWeights[key] === 'number'
-                  ? riskWeights[key]
-                  : DEFAULT_CATEGORY_WEIGHT
-              })
-              maxWeight = Math.max(...weightsFound)
-            }
-
-            const rawDate = doc.publishedAt || doc.createdAt
-            const pubTime = rawDate ? new Date(rawDate).getTime() : nowMs
-            const diffDays = Math.max(0, (nowMs - pubTime) / (1000 * 60 * 60 * 24))
-            const recencyFactor = 1 / (1 + diffDays / RECENCY_HALF_LIFE_DAYS)
-
-            const finalScore = maxWeight * (1 + recencyFactor)
-
-            return {
-              doc,
-              score: finalScore,
-              timestamp: pubTime,
-            }
-          })
-
-          // Sort descending by score, tie-break by newer publication date
-          scoredDocs.sort((a: any, b: any) => b.score - a.score || b.timestamp - a.timestamp)
-
-          const totalDocs = scoredDocs.length
-          const totalPages = Math.max(1, Math.ceil(totalDocs / limit))
-          const start = (page - 1) * limit
-          const paginatedDocs = scoredDocs.slice(start, start + limit).map((item: any) => item.doc)
-
+          const visibleDocs = restrictToActiveCategories(
+            filteredResult.docs || [],
+            params.riskWeights,
+          )
+          const rankedDocs = rankByRelevance(visibleDocs, params.riskWeights)
+          const visibleCategoryDocs = restrictToActiveCategories(
+            categoriesResult.docs || [],
+            params.riskWeights,
+          )
           return Response.json({
-            docs: paginatedDocs,
-            totalDocs,
-            limit,
-            page,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
-            prevPage: page > 1 ? page - 1 : null,
-            nextPage: page < totalPages ? page + 1 : null,
+            ...paginate(rankedDocs, params.page, params.limit),
+            categories: collectCategories(visibleCategoryDocs),
           })
         } catch (error: any) {
           return Response.json(
@@ -130,6 +240,7 @@ export const Pages: CollectionConfig = {
         }
         return data
       },
+      validateContentCategories,
     ],
   },
   fields: [
@@ -193,19 +304,16 @@ export const Pages: CollectionConfig = {
     {
       name: 'diseaseTypes',
       label: 'Disease Types / Categories',
-      type: 'select',
+      // Health topic keys owned by the backend catalog (not a fixed enum), so
+      // new scores become categories without CMS changes or migrations.
+      type: 'text',
       hasMany: true,
-      options: [
-        { label: 'General Health', value: 'general' },
-        { label: 'Diabetes', value: 'diabetes' },
-        { label: 'Sleep Apnea', value: 'sleep_apnea' },
-        { label: 'Depression & Mental Health', value: 'depression' },
-        { label: 'Metabolic Syndrome', value: 'metabolic_syndrome' },
-        { label: 'Obesity (EOSS)', value: 'eoss' },
-        { label: 'Cardiovascular Disease', value: 'cardiovascular' },
-      ],
       admin: {
         description: 'Categories to help organize, prioritize, and recommend content to members.',
+        components: {
+          Cell: './components/ContentCategoriesCell',
+          Field: './components/ContentCategoriesField',
+        },
       },
     },
     {
