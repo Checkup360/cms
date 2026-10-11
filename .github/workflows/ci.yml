@@ -10,6 +10,8 @@ jobs:
   check:
     name: Typecheck, Lint, Test & Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET || 'ci-placeholder' }}
@@ -46,8 +48,34 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          node -e '
+          const s = require("./coverage/coverage-summary.json").total;
+          const row = (k, v) => `| ${k} | ${v.pct}% |`;
+          const md = [
+            "### Coverage",
+            "| Metric | % |",
+            "| --- | --- |",
+            row("Statements", s.statements),
+            row("Branches", s.branches),
+            row("Functions", s.functions),
+            row("Lines", s.lines),
+          ].join("\n");
+          require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+          '
+
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 14
 
       - name: Build
         run: pnpm build
