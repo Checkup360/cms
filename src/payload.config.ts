@@ -51,6 +51,11 @@ const allowedOrigins: string[] = process.env.CORS_ALLOWED_ORIGINS
 export default buildConfig({
   admin: {
     user: Users.slug,
+    meta: {
+      title: 'Checkup360',
+      titleSuffix: '- CMS',
+      icons: [{ rel: 'icon', type: 'image/svg+xml', url: '/favicon.svg' }],
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },

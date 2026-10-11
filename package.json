@@ -1,7 +1,7 @@
 {
   "name": "checkup360-cms",
   "version": "1.0.0",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Checkup360 CMS - headless content management system built on Payload 3 and Next.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
