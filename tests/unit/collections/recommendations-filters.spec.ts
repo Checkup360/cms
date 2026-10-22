@@ -1,5 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+
 import { Pages } from '@/collections/Pages'
+import { fetchMemberRiskContext } from '@/lib/riskWeights'
+
+vi.mock('@/lib/riskWeights', () => ({
+  fetchMemberRiskContext: vi.fn(),
+}))
+
+const mockRiskWeights = (weights: Record<string, number> | null) => {
+  vi.mocked(fetchMemberRiskContext).mockResolvedValue({ weights, labels: {} })
+}
 
 describe('Recommended Endpoint - Category & Search Filters', () => {
   const endpoints = Array.isArray(Pages.endpoints) ? Pages.endpoints : []
@@ -16,6 +26,11 @@ describe('Recommended Endpoint - Category & Search Filters', () => {
     const response = await (recommendedEndpoint?.handler as any)(req)
     return response.json()
   }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRiskWeights(null)
+  })
 
   it('filters articles by category in the database query', async () => {
     const find = vi.fn().mockResolvedValue({ docs: [] })

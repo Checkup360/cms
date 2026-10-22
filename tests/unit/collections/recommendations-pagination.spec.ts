@@ -1,11 +1,26 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+
 import { Pages } from '@/collections/Pages'
+import { fetchMemberRiskContext } from '@/lib/riskWeights'
+
+vi.mock('@/lib/riskWeights', () => ({
+  fetchMemberRiskContext: vi.fn(),
+}))
+
+const mockRiskWeights = (weights: Record<string, number> | null) => {
+  vi.mocked(fetchMemberRiskContext).mockResolvedValue({ weights, labels: {} })
+}
 
 describe('Recommended Endpoint - Scoping, Pagination & Error Handling', () => {
   const endpoints = Array.isArray(Pages.endpoints) ? Pages.endpoints : []
   const recommendedEndpoint = endpoints.find(
     (e) => e.path === '/recommended' && e.method === 'get'
   )
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRiskWeights(null)
+  })
 
   it('filters by user organization when present on req.user', async () => {
     const mockFind = vi.fn().mockResolvedValue({ docs: [] })
@@ -25,7 +40,24 @@ describe('Recommended Endpoint - Scoping, Pagination & Error Handling', () => {
     )
   })
 
-  it('filters by query parameter organization when req.user has no organization', async () => {
+  it('ignores an organization query parameter sent by the client', async () => {
+    const mockFind = vi.fn().mockResolvedValue({ docs: [] })
+    const req = {
+      url: 'http://localhost:3000/api/pages/recommended?organization=org-from-query',
+      payload: { find: mockFind },
+      user: { organizationId: 'org-abc' },
+    }
+
+    await (recommendedEndpoint?.handler as any)(req)
+
+    expect(mockFind).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organization: { equals: 'org-abc' } },
+      })
+    )
+  })
+
+  it('answers 401 when the request has no organization', async () => {
     const mockFind = vi.fn().mockResolvedValue({ docs: [] })
     const req = {
       url: 'http://localhost:3000/api/pages/recommended?organization=org-from-query',
@@ -33,13 +65,10 @@ describe('Recommended Endpoint - Scoping, Pagination & Error Handling', () => {
       user: {},
     }
 
-    await (recommendedEndpoint?.handler as any)(req)
+    const response = await (recommendedEndpoint?.handler as any)(req)
 
-    expect(mockFind).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { organization: { equals: 'org-from-query' } },
-      })
-    )
+    expect(response.status).toBe(401)
+    expect(mockFind).not.toHaveBeenCalled()
   })
 
   it('applies pagination parameters and calculates correct metadata', async () => {
@@ -53,6 +82,7 @@ describe('Recommended Endpoint - Scoping, Pagination & Error Handling', () => {
     const req = {
       url: 'http://localhost:3000/api/pages/recommended?page=2&limit=10',
       payload: { find: mockFind },
+      user: { organizationId: 'org-abc' },
     }
 
     const response = await (recommendedEndpoint?.handler as any)(req)
@@ -76,6 +106,7 @@ describe('Recommended Endpoint - Scoping, Pagination & Error Handling', () => {
     const req = {
       url: 'http://localhost:3000/api/pages/recommended',
       payload: { find: mockFind },
+      user: { organizationId: 'org-abc' },
     }
 
     const response = await (recommendedEndpoint?.handler as any)(req)

@@ -1,5 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { Pages } from '@/collections/Pages'
+import { fetchMemberRiskContext } from '@/lib/riskWeights'
+
+vi.mock('@/lib/riskWeights', () => ({
+  fetchMemberRiskContext: vi.fn(),
+}))
+
+const mockRiskWeights = (weights: Record<string, number> | null) => {
+  vi.mocked(fetchMemberRiskContext).mockResolvedValue({ weights, labels: {} })
+}
 
 describe('Recommended Endpoint - Organization Active Categories', () => {
   const endpoints = Array.isArray(Pages.endpoints) ? Pages.endpoints : []
@@ -16,10 +26,11 @@ describe('Recommended Endpoint - Organization Active Categories', () => {
     { id: 'uncategorized', diseaseTypes: [], publishedAt },
   ]
 
-  const callEndpoint = async (query: string) => {
+  const callEndpoint = async (weights: Record<string, number> | null) => {
+    mockRiskWeights(weights)
     const find = vi.fn().mockResolvedValue({ docs })
     const req = {
-      url: `http://localhost:3000/api/pages/recommended?${query}`,
+      url: 'http://localhost:3000/api/pages/recommended',
       payload: { find },
       user: { organizationId: 'org-1' },
     }
@@ -27,10 +38,15 @@ describe('Recommended Endpoint - Organization Active Categories', () => {
     return response.json()
   }
 
-  const activeWeights = encodeURIComponent(JSON.stringify({ diabetes: 0.7, depression: 0.3 }))
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRiskWeights(null)
+  })
+
+  const activeWeights = { diabetes: 0.7, depression: 0.3 }
 
   it('hides articles whose categories are all disabled for the organization', async () => {
-    const data = await callEndpoint(`weights=${activeWeights}`)
+    const data = await callEndpoint(activeWeights)
     const ids = data.docs.map((doc: any) => doc.id)
 
     expect(ids).not.toContain('disabled-only')
@@ -41,27 +57,27 @@ describe('Recommended Endpoint - Organization Active Categories', () => {
   })
 
   it('keeps only the active categories of mixed articles', async () => {
-    const data = await callEndpoint(`weights=${activeWeights}`)
+    const data = await callEndpoint(activeWeights)
     const mixed = data.docs.find((doc: any) => doc.id === 'mixed')
 
     expect(mixed.diseaseTypes).toEqual(['diabetes'])
   })
 
   it('lists only active categories and general as filters', async () => {
-    const data = await callEndpoint(`weights=${activeWeights}`)
+    const data = await callEndpoint(activeWeights)
 
     expect(data.categories).toEqual(['diabetes', 'general'])
   })
 
   it('only shows general and uncategorized articles when no risk is active', async () => {
-    const data = await callEndpoint(`weights=${encodeURIComponent('{}')}`)
+    const data = await callEndpoint({})
     const ids = data.docs.map((doc: any) => doc.id)
 
     expect(ids.sort()).toEqual(['general', 'uncategorized'])
   })
 
-  it('does not filter categories when the caller sends no weights', async () => {
-    const data = await callEndpoint('')
+  it('does not filter categories when the weights cannot be resolved', async () => {
+    const data = await callEndpoint(null)
 
     expect(data.totalDocs).toBe(docs.length)
     expect(data.categories).toEqual(['cardiovascular', 'diabetes', 'eoss', 'general'])

@@ -6,6 +6,7 @@ import {
   ContentCategoriesUnavailableError,
   fetchContentCategories,
 } from '../lib/contentCategories'
+import { fetchMemberRiskContext } from '../lib/riskWeights'
 import { validateContentCategories } from './hooks/validateContentCategories'
 
 const DEFAULT_CATEGORY_WEIGHT = 0.2
@@ -17,9 +18,6 @@ const GENERAL_CATEGORY = 'general'
 type RecommendedParams = {
   page: number
   limit: number
-  /** Null when the caller sent no weights: every category is then visible. */
-  riskWeights: Record<string, number> | null
-  organizationId: string | null
   category: string | null
   search: string | null
 }
@@ -28,30 +26,12 @@ function parsePositiveInteger(value: string | null, fallback: number): number {
   return Math.max(1, parseInt(value || String(fallback), 10) || fallback)
 }
 
-function parseRiskWeights(weightsParam: string | null): Record<string, number> | null {
-  if (weightsParam === null) return null
-  try {
-    const parsed = JSON.parse(weightsParam)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
-  } catch {
-    const riskWeights: Record<string, number> = {}
-    for (const pair of weightsParam.split(',')) {
-      const [key, value] = pair.split(':')
-      const weight = parseFloat(value ?? '')
-      if (key && !isNaN(weight)) riskWeights[key.trim().toLowerCase()] = weight
-    }
-    return riskWeights
-  }
-}
-
 function parseRecommendedParams(searchParams: URLSearchParams): RecommendedParams {
   const category = searchParams.get('category')?.trim().toLowerCase() || null
   const search = searchParams.get('search')?.trim().slice(0, MAX_SEARCH_LENGTH) || null
   return {
     page: parsePositiveInteger(searchParams.get('page'), 1),
     limit: parsePositiveInteger(searchParams.get('limit'), 10),
-    riskWeights: parseRiskWeights(searchParams.get('weights')),
-    organizationId: searchParams.get('organization'),
     category,
     search,
   }
@@ -189,7 +169,16 @@ export const Pages: CollectionConfig = {
         try {
           const url = new URL(req.url, 'http://localhost')
           const params = parseRecommendedParams(url.searchParams)
-          const organizationId = (req.user as any)?.organizationId || params.organizationId
+          const organizationId = (req.user as any)?.organizationId
+          if (!organizationId) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 })
+          }
+
+          const risk = await fetchMemberRiskContext(req).catch((error) => {
+            console.error('[cms] failed to resolve member risk weights:', error)
+            return null
+          })
+          const riskWeights = risk?.weights ?? null
 
           const [filteredResult, categoriesResult] = await Promise.all([
             req.payload.find({
@@ -211,16 +200,18 @@ export const Pages: CollectionConfig = {
 
           const visibleDocs = restrictToActiveCategories(
             filteredResult.docs || [],
-            params.riskWeights,
+            riskWeights,
           )
-          const rankedDocs = rankByRelevance(visibleDocs, params.riskWeights)
+          const rankedDocs = rankByRelevance(visibleDocs, riskWeights)
           const visibleCategoryDocs = restrictToActiveCategories(
             categoriesResult.docs || [],
-            params.riskWeights,
+            riskWeights,
           )
           return Response.json({
             ...paginate(rankedDocs, params.page, params.limit),
             categories: collectCategories(visibleCategoryDocs),
+            categoryLabels: risk?.labels ?? {},
+            personalized: riskWeights !== null,
           })
         } catch (error: any) {
           return Response.json(
