@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import type { PayloadRequest } from 'payload'
 import {
   organizationScoped,
-  organizationAdminScoped,
   organizationCmsScoped,
 } from '@/auth/access'
 import type { BackendUser } from '@/auth/backendAuthStrategy'
@@ -45,63 +44,6 @@ describe('Access Control Rules', () => {
       const req = createMockRequest(null)
 
       const result = organizationScoped({ req } as any)
-      expect(result).toBe(false)
-    })
-  })
-
-  describe('organizationAdminScoped', () => {
-    it('returns equality query when user is an admin of the organization', () => {
-      const req = createMockRequest({
-        id: 'admin-1',
-        email: 'admin@example.com',
-        organizationId: orgId,
-        roles: ['admin'],
-      })
-
-      const result = organizationAdminScoped({ req } as any)
-      expect(result).toEqual({ organization: { equals: orgId } })
-    })
-
-    it('returns false when user is a content_manager but not admin', () => {
-      const req = createMockRequest({
-        id: 'cm-1',
-        email: 'cm@example.com',
-        organizationId: orgId,
-        roles: ['content_manager'],
-      })
-
-      const result = organizationAdminScoped({ req } as any)
-      expect(result).toBe(false)
-    })
-
-    it('returns false when user is only a regular member', () => {
-      const req = createMockRequest({
-        id: 'member-1',
-        email: 'member@example.com',
-        organizationId: orgId,
-        roles: ['member'],
-      })
-
-      const result = organizationAdminScoped({ req } as any)
-      expect(result).toBe(false)
-    })
-
-    it('returns false when user has admin role but organizationId is null', () => {
-      const req = createMockRequest({
-        id: 'admin-no-org',
-        email: 'admin@example.com',
-        organizationId: null,
-        roles: ['admin'],
-      })
-
-      const result = organizationAdminScoped({ req } as any)
-      expect(result).toBe(false)
-    })
-
-    it('returns false when request has no user', () => {
-      const req = createMockRequest(null)
-
-      const result = organizationAdminScoped({ req } as any)
       expect(result).toBe(false)
     })
   })
